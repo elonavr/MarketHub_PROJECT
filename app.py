@@ -1,8 +1,12 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
+from werkzeug.security import generate_password_hash, check_password_hash
 from db import db
 
 # Flask app initialization
-app = Flask(__name__)
+app = Flask(__name__, template_folder="frontend/templates")
+
+app.secret_key = "your_secret_key"  # מפתח הצפנה לניהול session
+
 
 # Database configuration for PostgreSQL
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:admin@localhost:5432/MarketHub'
@@ -24,51 +28,233 @@ with app.app_context():
 # -------------------------
 
 # Home Page
-@app.route('/')
-def home():
-    return render_template('home.html')
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-# Products Page (Display all products)
+# login
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        # Retrieving the username and password from the form
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # Query the database to find the user by username
+        user = User.query.filter_by(username=username).first()
+
+        # Check if user exists and if the password matches
+        if user and check_password_hash(user.password_hash, password):
+            # If valid, store user info in session
+            session["user_id"] = user.user_id
+            session["username"] = user.username
+            session["role"] = user.role
+            return redirect(url_for("index"))  # Redirect to the home page after successful login
+
+        # If credentials are invalid, show an error message
+        flash('Invalid username or password', 'error')
+        return redirect(url_for('login'))  # Redirect back to the login page
+
+    # If the request method is GET, render the login page
+    return render_template("login.html")          
+     
+
+# Logout
+@app.route("/logout")
+def logout():
+    session.clear()  # מוחק את הנתונים של המשתמש המחובר
+    return redirect(url_for("index"))
+
+# register
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        role = request.form.get("role")
+
+        # Check if username already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            return render_template("register.html", error="Username already exists")
+
+        # Create a new user with hashed password
+        new_user = User(
+            username=username,
+            role=role
+        )
+        new_user.set_password(password)  # Encrypt the password using the set_password method
+        
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect(url_for("login"))  # After registration, redirect to the login page
+
+    return render_template("register.html")
+
+# מסלול להציג את כל המוצרים
 @app.route('/products', methods=['GET'])
 def products():
-    products_list = Product.query.all()
+    if "user_id" not in session:
+        flash("Please log in to view products.", "danger")
+        return redirect(url_for("login"))
+
+    if session["role"] == "supplier":
+        # Retrieve only products added by the logged-in supplier
+        products_list = Product.query.filter_by(supplier_id=session["user_id"]).all()
+    else:
+        # Retrieve all products for customers
+        products_list = Product.query.all()
+
     return render_template('products.html', products=products_list)
+
+# Form - Create a new product (for HTML form submission)
+@app.route('/products/add_form', methods=['POST'])  # שים לו endpoint חדש
+def add_product_form():
+    product_name = request.form.get('product_name')
+    description = request.form.get('description')
+    price = request.form.get('price')
+    stock = request.form.get('stock')
+    category = request.form.get('category')
+
+    # יצירת מוצר חדש
+    new_product = Product(
+        product_name=product_name,
+        description=description,
+        price=price,
+        stock=stock,
+        category=category
+    )
+    
+    db.session.add(new_product)
+    db.session.commit()
+    
+    return redirect(url_for('products'))  # לאחר הוספת המוצר, מפנה לדף המוצרים
+
+# Add product to cart (via form submission)
+@app.route('/cart/add_form', methods=['POST'])  # Endpoint חדש עבור הטופס
+def add_to_cart_form():
+    # קבלת נתונים מהטופס
+    user_id = request.form.get('user_id')
+    product_id = request.form.get('product_id')
+    quantity = request.form.get('quantity')
+    
+    # testing if the user is a supplier
+    user = User.query.get(user_id)
+    if user and user.role == 'supplier':
+        flash("Sellers cannot add products to cart.", "danger")
+        return redirect(url_for('products'))  # מחזיר את המשתמש לדף המוצרים
+    
+    # יצירת אובייקט Cart ויישום הנתונים
+    cart_item = Cart(user_id=user_id, product_id=product_id, quantity=quantity)
+    
+    # הוספת המוצר לעגלה במסד הנתונים
+    db.session.add(cart_item)
+    db.session.commit()
+    
+    return redirect(url_for('products'))  # מחזיר את המשתמש לדף המוצרים
+
+@app.route('/order', methods=['POST'])
+def create_order():
+    user_id = request.form.get('user_id')
+    
+    # קבלת כל המוצרים מהעגלה עבור המשתמש
+    cart_items = Cart.query.filter_by(user_id=user_id).all()
+
+    if not cart_items:
+        return jsonify({'error': 'No items in cart'}), 400  # אם אין מוצרים בעגלה
+
+    # יצירת הזמנה חדשה
+    new_order = Order(user_id=user_id)
+    db.session.add(new_order)
+    db.session.commit()  # נשמור את ההזמנה במסד הנתונים
+
+    # הוספת כל המוצרים לעסקה בטבלת ההזמנות
+    for item in cart_items:
+        order_item = OrderItem(
+            order_id=new_order.order_id,
+            product_id=item.product_id,
+            quantity=item.quantity
+        )
+        db.session.add(order_item)
+
+    # נמחק את המוצרים מהעגלה לאחר ביצוע ההזמנה
+    db.session.query(Cart).filter_by(user_id=user_id).delete()
+    db.session.commit()
+
+    return jsonify({'message': 'Order placed successfully', 'order_id': new_order.order_id}), 201
+
+
+@app.route('/order/<int:order_id>', methods=['GET'])
+def view_order(order_id):
+    # שליפת ההזמנה על פי מזהה ההזמנה
+    order = Order.query.get_or_404(order_id)
+    
+    # שליפת פרטי ההזמנה
+    order_details = OrderDetail.query.filter_by(order_id=order_id).all()
+
+    # סך ההזמנה (אם רוצים לחשב אותו)
+    total_amount = sum(item.quantity * item.price for item in order_details)
+    
+    # שלח את הנתונים לדף HTML
+    return render_template('order.html', order=order, order_details=order_details, total_amount=total_amount)
+
+@app.route('/orders', methods=['GET'])
+def view_orders():
+    user_id = 1  # לדוגמה, זה יכול להיות מזהה המשתמש המחובר
+    orders = Order.query.filter_by(user_id=user_id).all()
+    return render_template('order_history.html', orders=orders)
+
 
 # -------------------------
 # 🔹 CRUD for Products
 # -------------------------
 
 # Create a new product (via API request)
-@app.route('/products/add', methods=['POST'])
-def add_product():
-    data = request.get_json()  # Get JSON data from the request
+@app.route('/products/add', methods=['GET', 'POST'])
+def add_product_api():
+    if request.method == "POST":
+        # Get form data
+        product_name = request.form.get('product_name')
+        description = request.form.get('description')
+        price = request.form.get('price')
+        stock = request.form.get('stock')
+        image_url = request.form.get('image_url', '')
 
-    # Validate the input data
-    if not data or 'supplier_id' not in data or 'product_name' not in data or 'price' not in data:
-        return jsonify({'error': 'supplier_id, product_name, and price are required'}), 400
+        # Ensure the user is logged in as a supplier
+        supplier_id = session.get("user_id")
+        if not supplier_id:
+            flash("Error: You must be logged in!", "danger")
+            return redirect(url_for("add_product_api"))
 
-    # Create a new product
-    new_product = Product(
-        supplier_id=data['supplier_id'],
-        product_name=data['product_name'],
-        description=data.get('description', ''),
-        price=data['price'],
-        stock=data.get('stock', 0)
-    )
+        # Create new product
+        new_product = Product(
+            supplier_id=supplier_id,  # Ensure supplier ID is saved
+            product_name=product_name,
+            description=description,
+            price=price,
+            stock=stock,
+            image_url=image_url
+        )
 
-    db.session.add(new_product)
-    db.session.commit()
+        # Save to database
+        db.session.add(new_product)
+        db.session.commit()
 
-    return jsonify({'message': 'Product created successfully'}), 201
+        flash("Product added successfully!", "success")
+        return redirect(url_for("products"))
+
+    # If GET request, render the add_product.html page
+    return render_template("add_product.html")
 
 
 # -------------------------
 # 🔹 CRUD for Cart
 # -------------------------
 
-# Add product to cart
-@app.route('/cart/add', methods=['POST'])
-def add_to_cart():
+# Add product to cart (via API request)
+@app.route('/cart/add', methods=['POST'])  # Endpoint נפרד עבור ה-API
+def add_to_cart_api():
     data = request.json
 
     # Validate if the data contains the necessary fields
@@ -87,14 +273,18 @@ def add_to_cart():
         return jsonify({'error': 'User not found'}), 404
     if not product:
         return jsonify({'error': 'Product not found'}), 404
-        
-
-    # Add to cart
+    
+     # avoiding add products to the cart by suppliers
+    if user.role == 'supplier':
+        return jsonify({'error': 'Sellers cannot add products to cart'}), 403
+    
+    # הוספת המוצר לעגלה במסד הנתונים
     cart_item = Cart(user_id=user_id, product_id=product_id, quantity=quantity)
     db.session.add(cart_item)
     db.session.commit()
 
     return jsonify({'message': 'Product added to cart successfully'}), 201
+
 
 # View the cart items for a specific user
 @app.route('/cart/<int:user_id>', methods=['GET'])
@@ -186,5 +376,6 @@ def delete_user(user_id):
 # 🔥 Running the Server
 # -------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(debug=True)  # http://127.0.0.1:5000/
+
 

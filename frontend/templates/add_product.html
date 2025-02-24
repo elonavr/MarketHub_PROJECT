@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Add Product - MarketHub{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Add a New Product</h2>
+        <form action="/products/add" method="post">
+            <div class="form-group">
+                <label for="product_name">Product Name:</label>
+                <input type="text" class="form-control" name="product_name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price:</label>
+                <input type="number" class="form-control" name="price" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="image_url">Image URL:</label>
+                <input type="text" class="form-control" name="image_url">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Product</button>
+        </form>
+    </div>
+{% endblock %}

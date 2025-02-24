@@ -11,9 +11,14 @@ class Product(db.Model):
     stock = db.Column(db.Integer, default=0)
     is_available = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    image_url = db.Column(db.String(500), nullable=True)  
+
 
     def __repr__(self):
         return f'<Product {self.product_name}>'
-    
+ 
+
+  
+
     
 
