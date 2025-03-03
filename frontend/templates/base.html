@@ -24,19 +24,28 @@
         <nav>
             <a href="/">Home</a> |
             <a href="/products">Products</a> |
-            {% if "user_id" not in session %}
+    
+            {% if not session.get('user_id') %}
                 <a href="{{ url_for('register') }}">Register</a> |
             {% endif %}            
+    
             {% if "user_id" in session %}
                 <a href="{{ url_for('logout') }}">Logout ({{ session['username'] }})</a>
+    
                 {% if session['role'] == 'supplier' %}
-                <a href="{{ url_for('add_product_api') }}" class="btn btn-success">Add Product</a>
-            {% endif %}            {% else %}
+                    <a href="{{ url_for('add_product_api') }}" class="btn btn-success">Add Product To Sell</a>
+                {% endif %}     
+    
+                {% if session['role'] == 'customer' %}
+                    <a href="{{ url_for('view_cart') }}" class="btn btn-warning">🛒 Cart</a>
+                {% endif %}
+    
+            {% else %}
                 <a href="{{ url_for('login') }}">Login</a>
             {% endif %}
         </nav>
     </header>
-
+    
     <main>
         {% block content %}{% endblock %}
     </main>

@@ -28,11 +28,15 @@ with app.app_context():
 # -------------------------
 
 # Home Page
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
 # login
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -49,15 +53,17 @@ def login():
             session["user_id"] = user.user_id
             session["username"] = user.username
             session["role"] = user.role
-            return redirect(url_for("index"))  # Redirect to the home page after successful login
+
+            # Redirect to the home page after successful login
+            return redirect(url_for("index"))
 
         # If credentials are invalid, show an error message
         flash('Invalid username or password', 'error')
         return redirect(url_for('login'))  # Redirect back to the login page
 
     # If the request method is GET, render the login page
-    return render_template("login.html")          
-     
+    return render_template("login.html")
+
 
 # Logout
 @app.route("/logout")
@@ -66,6 +72,8 @@ def logout():
     return redirect(url_for("index"))
 
 # register
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -83,16 +91,20 @@ def register():
             username=username,
             role=role
         )
-        new_user.set_password(password)  # Encrypt the password using the set_password method
-        
+        # Encrypt the password using the set_password method
+        new_user.set_password(password)
+
         db.session.add(new_user)
         db.session.commit()
 
-        return redirect(url_for("login"))  # After registration, redirect to the login page
+        # After registration, redirect to the login page
+        return redirect(url_for("login"))
 
     return render_template("register.html")
 
 # מסלול להציג את כל המוצרים
+
+
 @app.route('/products', methods=['GET'])
 def products():
     if "user_id" not in session:
@@ -101,7 +113,8 @@ def products():
 
     if session["role"] == "supplier":
         # Retrieve only products added by the logged-in supplier
-        products_list = Product.query.filter_by(supplier_id=session["user_id"]).all()
+        products_list = Product.query.filter_by(
+            supplier_id=session["user_id"]).all()
     else:
         # Retrieve all products for customers
         products_list = Product.query.all()
@@ -109,60 +122,103 @@ def products():
     return render_template('products.html', products=products_list)
 
 # Form - Create a new product (for HTML form submission)
-@app.route('/products/add_form', methods=['POST'])  # שים לו endpoint חדש
+@app.route('/products/add_form', methods=['POST'])
 def add_product_form():
+    if "user_id" not in session or session["role"] not in ["supplier"]:
+        flash("Only suppliers can add products.", "danger")
+        return redirect(url_for("products"))
+
     product_name = request.form.get('product_name')
     description = request.form.get('description')
     price = request.form.get('price')
     stock = request.form.get('stock')
     category = request.form.get('category')
 
-    # יצירת מוצר חדש
+    try:
+        stock = int(stock) if stock and stock.isdigit() else 1
+    except ValueError:
+        flash("Invalid stock value.", "danger")
+        return redirect(url_for("products"))
+
+
+    # יצירת מוצר חדש עם supplier_id
     new_product = Product(
         product_name=product_name,
         description=description,
         price=price,
         stock=stock,
-        category=category
+        category=category,
+        supplier_id=session["user_id"]  # חשוב! משייך את המוצר למוכר
     )
-    
+
     db.session.add(new_product)
     db.session.commit()
-    
+
+    flash("Product added successfully!", "success")
     return redirect(url_for('products'))  # לאחר הוספת המוצר, מפנה לדף המוצרים
 
 # Add product to cart (via form submission)
+
+
 @app.route('/cart/add_form', methods=['POST'])  # Endpoint חדש עבור הטופס
 def add_to_cart_form():
     # קבלת נתונים מהטופס
     user_id = request.form.get('user_id')
     product_id = request.form.get('product_id')
     quantity = request.form.get('quantity')
+
+    product = Product.query.get(product_id)
     
+    if not product:
+        flash("Product not found.", "danger")
+        return redirect(url_for("products"))
+
+    if quantity > product.stock:
+        flash(f"Only {product.stock} units available!", "danger")
+        return redirect(url_for("products"))
+    
+
     # testing if the user is a supplier
     user = User.query.get(user_id)
     if user and user.role == 'supplier':
-        flash("Sellers cannot add products to cart.", "danger")
+        flash("Suppliers cannot add products to cart.", "danger")
         return redirect(url_for('products'))  # מחזיר את המשתמש לדף המוצרים
-    
+
     # יצירת אובייקט Cart ויישום הנתונים
     cart_item = Cart(user_id=user_id, product_id=product_id, quantity=quantity)
-    
+
     # הוספת המוצר לעגלה במסד הנתונים
     db.session.add(cart_item)
     db.session.commit()
-    
+
+    flash("Product added to cart successfully!", "success")
     return redirect(url_for('products'))  # מחזיר את המשתמש לדף המוצרים
+
+@app.route('/cart/remove/<int:cart_id>', methods=['POST'])
+def remove_from_cart(cart_id):
+    cart_item = Cart.query.get(cart_id)
+
+    if not cart_item:
+        flash("Item not found in cart.", "danger")
+        return redirect(url_for("view_cart"))
+
+    db.session.delete(cart_item)
+    db.session.commit()
+
+    flash("Item removed from cart.", "success")
+    return redirect(url_for("view_cart"))
+
 
 @app.route('/order', methods=['POST'])
 def create_order():
     user_id = request.form.get('user_id')
-    
+
     # קבלת כל המוצרים מהעגלה עבור המשתמש
     cart_items = Cart.query.filter_by(user_id=user_id).all()
 
     if not cart_items:
-        return jsonify({'error': 'No items in cart'}), 400  # אם אין מוצרים בעגלה
+        # אם אין מוצרים בעגלה
+        return jsonify({'error': 'No items in cart'}), 400
 
     # יצירת הזמנה חדשה
     new_order = Order(user_id=user_id)
@@ -189,21 +245,48 @@ def create_order():
 def view_order(order_id):
     # שליפת ההזמנה על פי מזהה ההזמנה
     order = Order.query.get_or_404(order_id)
-    
+
     # שליפת פרטי ההזמנה
     order_details = OrderDetail.query.filter_by(order_id=order_id).all()
 
     # סך ההזמנה (אם רוצים לחשב אותו)
     total_amount = sum(item.quantity * item.price for item in order_details)
-    
+
     # שלח את הנתונים לדף HTML
     return render_template('order.html', order=order, order_details=order_details, total_amount=total_amount)
+
 
 @app.route('/orders', methods=['GET'])
 def view_orders():
     user_id = 1  # לדוגמה, זה יכול להיות מזהה המשתמש המחובר
     orders = Order.query.filter_by(user_id=user_id).all()
     return render_template('order_history.html', orders=orders)
+
+
+@app.route('/products/update_stock', methods=['POST'])
+def update_stock():
+    if "user_id" not in session or session["role"] != "supplier":
+        flash("Unauthorized action.", "danger")
+        return redirect(url_for("products"))
+
+    product_id = request.form.get("product_id")
+    action = request.form.get("action")
+
+    product = Product.query.filter_by(product_id=product_id, supplier_id=session["user_id"]).first()
+
+    if not product:
+        flash("Product not found or not owned by you.", "danger")
+        return redirect(url_for("products"))
+
+    if action == "increase":
+        product.stock += 1
+    elif action == "decrease" and product.stock > 0:
+        product.stock -= 1
+
+    db.session.commit()
+    flash("Stock updated successfully!", "success")
+    return redirect(url_for("products"))
+
 
 
 # -------------------------
@@ -273,11 +356,11 @@ def add_to_cart_api():
         return jsonify({'error': 'User not found'}), 404
     if not product:
         return jsonify({'error': 'Product not found'}), 404
-    
-     # avoiding add products to the cart by suppliers
+
+        # avoiding add products to the cart by suppliers
     if user.role == 'supplier':
-        return jsonify({'error': 'Sellers cannot add products to cart'}), 403
-    
+        return jsonify({'error': 'Suppliers cannot add products to cart'}), 403
+
     # הוספת המוצר לעגלה במסד הנתונים
     cart_item = Cart(user_id=user_id, product_id=product_id, quantity=quantity)
     db.session.add(cart_item)
@@ -287,17 +370,32 @@ def add_to_cart_api():
 
 
 # View the cart items for a specific user
-@app.route('/cart/<int:user_id>', methods=['GET'])
-def view_cart(user_id):
-    cart_items = Cart.query.filter_by(user_id=user_id).all()
-    result = [{'product_id': item.product_id, 'quantity': item.quantity} for item in cart_items]
-    return jsonify(result), 200
+@app.route('/cart', methods=['GET'])
+def view_cart():
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("Please log in to view your cart.", "danger")
+        return redirect(url_for("login"))
 
+    cart_items = db.session.query(Cart, Product).join(Product, Cart.product_id == Product.product_id).filter(Cart.user_id == user_id).all()
+    
+    total_amount = sum(cart.quantity * product.price for cart, product in cart_items)
+        
+    print("🔍 Debug - Cart Items:")
+    for item in cart_items:
+        print("Type of item:", type(item))
+        print("Content of item:", item)
+
+
+    
+    return render_template("cart.html", cart_items=cart_items, total_amount=total_amount)
 # -------------------------
 # 🔹 CRUD for Users (API)
 # -------------------------
 
 # Create a new user (API)
+
+
 @app.route('/users', methods=['POST'])
 def create_user():
     # Safely retrieve JSON data from the request
@@ -314,7 +412,8 @@ def create_user():
     # Create a new user with the provided data
     new_user = User(
         username=data['username'],
-        role=data.get('role', 'customer')  # Default role is 'customer' if not provided
+        # Default role is 'customer' if not provided
+        role=data.get('role', 'customer')
     )
     new_user.set_password(data['password'])  # Securely hash the password
 
@@ -325,13 +424,18 @@ def create_user():
     return jsonify({'message': 'User created successfully'}), 201
 
 # Get all users
+
+
 @app.route('/users', methods=['GET'])
 def get_users():
     users = User.query.all()
-    result = [{'user_id': u.user_id, 'username': u.username, 'role': u.role} for u in users]
+    result = [{'user_id': u.user_id, 'username': u.username, 'role': u.role}
+              for u in users]
     return jsonify(result), 200
 
 # Get user by ID
+
+
 @app.route('/users/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
     user = User.query.get(user_id)
@@ -344,6 +448,8 @@ def get_user_by_id(user_id):
     return jsonify({'error': 'User not found'}), 404
 
 # Update user details
+
+
 @app.route('/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     data = request.json
@@ -363,6 +469,8 @@ def update_user(user_id):
     return jsonify({'error': 'User not found'}), 404
 
 # Delete a user
+
+
 @app.route('/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     user = User.query.get(user_id)
@@ -372,10 +480,9 @@ def delete_user(user_id):
         return jsonify({'message': 'User deleted successfully'}), 200
     return jsonify({'error': 'User not found'}), 404
 
+
 # -------------------------
 # 🔥 Running the Server
 # -------------------------
 if __name__ == "__main__":
     app.run(debug=True)  # http://127.0.0.1:5000/
-
-
