@@ -1,6 +1,10 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import db
+from collections import defaultdict
+from models.cart_model import Cart
+from models.product_model import Product
+
 
 # Flask app initialization
 app = Flask(__name__, template_folder="frontend/templates")
@@ -194,19 +198,22 @@ def add_to_cart_form():
     flash("Product added to cart successfully!", "success")
     return redirect(url_for('products'))  # מחזיר את המשתמש לדף המוצרים
 
-@app.route('/cart/remove/<int:cart_id>', methods=['POST'])
-def remove_from_cart(cart_id):
-    cart_item = Cart.query.get(cart_id)
+@app.route('/cart/remove', methods=['POST'])  # ✏️ שונה - אין <int:cart_id>
+def remove_from_cart():
+    product_id = request.form.get('product_id')  # ✏️ שונה - קבלת product_id מהטופס
+    user_id = session.get("user_id")
 
-    if not cart_item:
-        flash("Item not found in cart.", "danger")
-        return redirect(url_for("view_cart"))
+    if not user_id:
+        flash("Please log in to modify your cart.", "danger")
+        return redirect(url_for("login"))
 
-    db.session.delete(cart_item)
+    # ✏️ שינוי: מחיקה לפי user_id + product_id (לא cart_id)
+    db.session.query(Cart).filter_by(user_id=user_id, product_id=product_id).delete()
     db.session.commit()
 
-    flash("Item removed from cart.", "success")
+    flash("Product removed from cart.", "success")
     return redirect(url_for("view_cart"))
+
 
 
 @app.route('/order', methods=['POST'])
@@ -379,14 +386,24 @@ def view_cart():
 
     cart_items = db.session.query(Cart, Product).join(Product, Cart.product_id == Product.product_id).filter(Cart.user_id == user_id).all()
     
+    # קיבוץ המוצרים לפי שם המוצר
+    grouped_cart = defaultdict(lambda: {'quantity': 0, 'price': 0, 'total': 0, 'product_id': 0})
+
+    for cart, product in cart_items:
+        if product.product_name in grouped_cart:
+            grouped_cart[product.product_name]['quantity'] += cart.quantity
+            grouped_cart[product.product_name]['total'] += cart.quantity * product.price
+        else:
+            grouped_cart[product.product_name] = {
+                'quantity': cart.quantity,
+                'price': product.price,
+                'total': cart.quantity * product.price,
+                'product_id': product.product_id  # נוסיף את ה-ID כדי לאפשר הסרה
+            }
+            
+    grouped_cart = dict(grouped_cart)
+
     total_amount = sum(cart.quantity * product.price for cart, product in cart_items)
-        
-    print("🔍 Debug - Cart Items:")
-    for item in cart_items:
-        print("Type of item:", type(item))
-        print("Content of item:", item)
-
-
     
     return render_template("cart.html", cart_items=cart_items, total_amount=total_amount)
 # -------------------------

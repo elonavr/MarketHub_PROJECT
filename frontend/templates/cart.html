@@ -16,24 +16,23 @@
       </tr>
     </thead>
     <tbody>
-      {% for cart, product in cart_items %}
+      {% for product_name, item in cart_items.items() %}  {# ✏️ שונה מ- cart, product #}
       <tr>
-        <td>{{ product.product_name }}</td>
-        <td>{{ cart.quantity }}</td>
-        <td>${{ product.price }}</td>
-        <td>${{ cart.quantity * product.price }}</td>
+        <td>{{ product_name }}</td>
+        <td>{{ item.quantity }}</td>  {# ✏️ שונה מ- cart.quantity #}
+        <td>${{ "%.2f"|format(item.price) }}</td>  {# ✏️ שונה מ- product.price #}
+        <td>${{ "%.2f"|format(item.total) }}</td>  {# ✏️ שונה מחישוב ישיר #}
         <td>
-              <form action="{{ url_for('remove_from_cart', cart_id=cart.id) }}" method="post">
+          <form action="{{ url_for('remove_from_cart') }}" method="post">  {# ✏️ שונה - אין cart_id #}
+            <input type="hidden" name="product_id" value="{{ item.product_id }}">  {# ✏️ שדה מוסתר עם product_id #}
             <button type="submit" class="btn btn-danger">Remove</button>
-        </form>
-        
+          </form>
         </td>
       </tr>
       {% endfor %}
     </tbody>
-
   </table>
-  <h4>Total: ${{ total_amount if total_amount else '0.00' }}</h4>
+  <h4>Total: ${{ "%.2f"|format(total_amount) if total_amount else '0.00' }}</h4>  {# ✏️ חישוב סכום כולל מעודכן #}
   <a href="/checkout" class="btn btn-primary">Proceed to Checkout</a>
 </div>
 {% endblock %}
