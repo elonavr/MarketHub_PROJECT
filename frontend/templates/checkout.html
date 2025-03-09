@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - MarketHub{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Checkout</h2>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cart, product in cart_items %}
+            <tr>
+                <td>{{ product.product_name }}</td>
+                <td>{{ cart.quantity }}</td>
+                <td>${{ "%.2f"|format(product.price) }}</td>
+                <td>${{ "%.2f"|format(cart.quantity * product.price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Total Amount: ${{ "%.2f"|format(total_amount) }}</h4>
+
+    <form action="{{ url_for('confirm_order') }}" method="post">
+        <button type="submit" class="btn btn-success">Confirm Order</button>
+    </form>
+</div>
+{% endblock %}

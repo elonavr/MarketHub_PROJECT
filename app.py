@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from db import db
-from collections import defaultdict
-from models.cart_model import Cart
-from models.product_model import Product
+from datetime import datetime
+from models import db, Cart, Product, Order, OrderDetail 
+from flask_sqlalchemy import SQLAlchemy
+
 
 
 # Flask app initialization
@@ -17,15 +17,19 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:admin@localhost:5
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize the database
-db.init_app(app)
+db = SQLAlchemy(app)
 
 # Import models after initializing db
+
 with app.app_context():
     from models.user_model import User
     from models.product_model import Product
     from models.favorite_model import Favorite
     from models.cart_model import Cart
-    from models.order_model import Order
+    from models.order_model import Order, OrderDetail
+
+    db.create_all()
+
 
 # -------------------------
 # 🔹 HOME & STATIC PAGES
@@ -126,6 +130,8 @@ def products():
     return render_template('products.html', products=products_list)
 
 # Form - Create a new product (for HTML form submission)
+
+
 @app.route('/products/add_form', methods=['POST'])
 def add_product_form():
     if "user_id" not in session or session["role"] not in ["supplier"]:
@@ -143,7 +149,6 @@ def add_product_form():
     except ValueError:
         flash("Invalid stock value.", "danger")
         return redirect(url_for("products"))
-
 
     # יצירת מוצר חדש עם supplier_id
     new_product = Product(
@@ -164,43 +169,107 @@ def add_product_form():
 # Add product to cart (via form submission)
 
 
-@app.route('/cart/add_form', methods=['POST'])  # Endpoint חדש עבור הטופס
+@app.route('/cart/add_form', methods=['POST'])
 def add_to_cart_form():
     # קבלת נתונים מהטופס
-    user_id = request.form.get('user_id')
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("Please log in to add items to your cart.", "danger")
+        return redirect(url_for("login"))
+
     product_id = request.form.get('product_id')
     quantity = request.form.get('quantity')
 
+    if not product_id or not quantity:
+        flash("Invalid product or quantity.", "danger")
+        return redirect(url_for("products"))
+
+    # ניסיון להמיר את הכמות למספר שלם
+    try:
+        quantity = int(quantity)
+        if quantity <= 0:
+            flash("Quantity must be greater than zero.", "danger")
+            return redirect(url_for("products"))
+    except ValueError:
+        flash("Invalid quantity. Please enter a valid number.", "danger")
+        return redirect(url_for("products"))
+
+    # בדיקת אם המוצר קיים
     product = Product.query.get(product_id)
-    
     if not product:
         flash("Product not found.", "danger")
         return redirect(url_for("products"))
 
+    # בדיקת מלאי
     if quantity > product.stock:
         flash(f"Only {product.stock} units available!", "danger")
         return redirect(url_for("products"))
-    
 
-    # testing if the user is a supplier
+    # בדיקת אם המשתמש הוא ספק
     user = User.query.get(user_id)
     if user and user.role == 'supplier':
         flash("Suppliers cannot add products to cart.", "danger")
-        return redirect(url_for('products'))  # מחזיר את המשתמש לדף המוצרים
+        return redirect(url_for("products"))
 
-    # יצירת אובייקט Cart ויישום הנתונים
-    cart_item = Cart(user_id=user_id, product_id=product_id, quantity=quantity)
+    # בדיקה אם המוצר כבר בעגלה של המשתמש
+    cart_item = Cart.query.filter_by(
+        user_id=user_id, product_id=product_id).first()
 
-    # הוספת המוצר לעגלה במסד הנתונים
-    db.session.add(cart_item)
+    if cart_item:
+        if cart_item.quantity + quantity > product.stock:
+            flash(
+                f"Adding {quantity} exceeds stock limit. Only {product.stock - cart_item.quantity} more can be added.", "danger")
+            return redirect(url_for("products"))
+
+        cart_item.quantity += quantity
+    else:
+        cart_item = Cart(
+            user_id=user_id, product_id=product_id, quantity=quantity)
+        db.session.add(cart_item)
+
     db.session.commit()
 
     flash("Product added to cart successfully!", "success")
-    return redirect(url_for('products'))  # מחזיר את המשתמש לדף המוצרים
+    return redirect(url_for("products"))
+
+
+@app.route('/update_cart_quantity', methods=['POST'])
+def update_cart_quantity():
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("Please log in to update your cart.", "danger")
+        return redirect(url_for("login"))
+
+    product_id = request.form.get("product_id")
+    action = request.form.get("action")  # 'increase' או 'decrease'
+
+    cart_item = Cart.query.filter_by(user_id=user_id, product_id=product_id).first()
+    product = Product.query.get(product_id)
+
+    if not cart_item or not product:
+        flash("Item not found in cart.", "danger")
+        return redirect(url_for("view_cart"))
+
+    if action == "increase":
+        if cart_item.quantity < product.stock:
+            cart_item.quantity += 1
+        else:
+            flash("No more stock available.", "warning")
+    
+    elif action == "decrease":
+        if cart_item.quantity > 1:
+            cart_item.quantity -= 1
+        else:
+            flash("Minimum quantity is 1. To remove, click 'Remove'.", "warning")
+
+    db.session.commit()
+    return redirect(url_for("view_cart"))
+
 
 @app.route('/cart/remove', methods=['POST'])  # ✏️ שונה - אין <int:cart_id>
 def remove_from_cart():
-    product_id = request.form.get('product_id')  # ✏️ שונה - קבלת product_id מהטופס
+    # ✏️ שונה - קבלת product_id מהטופס
+    product_id = request.form.get('product_id')
     user_id = session.get("user_id")
 
     if not user_id:
@@ -208,12 +277,12 @@ def remove_from_cart():
         return redirect(url_for("login"))
 
     # ✏️ שינוי: מחיקה לפי user_id + product_id (לא cart_id)
-    db.session.query(Cart).filter_by(user_id=user_id, product_id=product_id).delete()
+    db.session.query(Cart).filter_by(
+        user_id=user_id, product_id=product_id).delete()
     db.session.commit()
 
     flash("Product removed from cart.", "success")
     return redirect(url_for("view_cart"))
-
 
 
 @app.route('/order', methods=['POST'])
@@ -279,7 +348,8 @@ def update_stock():
     product_id = request.form.get("product_id")
     action = request.form.get("action")
 
-    product = Product.query.filter_by(product_id=product_id, supplier_id=session["user_id"]).first()
+    product = Product.query.filter_by(
+        product_id=product_id, supplier_id=session["user_id"]).first()
 
     if not product:
         flash("Product not found or not owned by you.", "danger")
@@ -295,12 +365,94 @@ def update_stock():
     return redirect(url_for("products"))
 
 
+@app.route('/checkout', methods=['GET'])
+def checkout():
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("Please log in to proceed with checkout.", "danger")
+        return redirect(url_for("login"))
+
+    # שליפת מוצרים מהעגלה של המשתמש
+    cart_items = db.session.query(Cart, Product).join(
+        Product, Cart.product_id == Product.product_id).filter(Cart.user_id == user_id).all()
+
+    if not cart_items:
+        flash("Your cart is empty.", "warning")
+        return redirect(url_for("products"))
+
+    total_amount = sum(cart.quantity * product.price for cart,
+                       product in cart_items)
+
+    return render_template("checkout.html", cart_items=cart_items, total_amount=total_amount)
+
+
+@app.route('/confirm_order', methods=['POST'])
+def confirm_order():
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("Please log in to confirm your order.", "danger")
+        return redirect(url_for("login"))
+
+    # שליפת פריטים מהעגלה של המשתמש
+    cart_items = db.session.query(Cart, Product).join(
+        Product, Cart.product_id == Product.product_id).filter(Cart.user_id == user_id).all()
+
+    if not cart_items:
+        flash("Your cart is empty.", "warning")
+        return redirect(url_for("products"))
+
+    # יצירת הזמנה חדשה
+    new_order = Order(user_id=user_id, total_amount=0,
+                      status="paid", created_at=datetime.utcnow())
+    db.session.add(new_order)
+    db.session.flush()  # מאפשר גישה ל-order_id החדש שנוצר
+
+    total_amount = 0
+
+    # יצירת רשומות עבור הפריטים שנרכשו
+    for cart, product in cart_items:
+        if cart.quantity > product.stock:
+            flash(f"Insufficient stock for {product.product_name}.", "danger")
+            return redirect(url_for("checkout"))
+
+        # עדכון המלאי
+        product.stock -= cart.quantity
+
+        # הוספת הפריט לטבלת OrderDetails
+        order_detail = OrderDetail(
+            order_id=new_order.order_id,
+            product_id=product.product_id,
+            quantity=cart.quantity,
+            price=product.price,
+            total_price=cart.quantity * product.price
+        )
+        db.session.add(order_detail)
+
+        total_amount += cart.quantity * product.price
+
+    # עדכון סכום ההזמנה לאחר חישוב הסכום הכולל
+    new_order.total_amount = total_amount
+
+    # ניקוי העגלה של המשתמש
+    Cart.query.filter_by(user_id=user_id).delete()
+
+    db.session.commit()
+
+    flash("Your order has been successfully placed!", "success")
+    return redirect(url_for("order_confirmation"))
+
+
+@app.route('/order-confirmation', methods=['GET'])
+def order_confirmation():
+    return render_template("order_confirmation.html")
 
 # -------------------------
 # 🔹 CRUD for Products
 # -------------------------
 
 # Create a new product (via API request)
+
+
 @app.route('/products/add', methods=['GET', 'POST'])
 def add_product_api():
     if request.method == "POST":
@@ -384,28 +536,25 @@ def view_cart():
         flash("Please log in to view your cart.", "danger")
         return redirect(url_for("login"))
 
-    cart_items = db.session.query(Cart, Product).join(Product, Cart.product_id == Product.product_id).filter(Cart.user_id == user_id).all()
-    
+    cart_items = db.session.query(Cart, Product).join(
+        Product, Cart.product_id == Product.product_id).filter(Cart.user_id == user_id).all()
+
     # קיבוץ המוצרים לפי שם המוצר
-    grouped_cart = defaultdict(lambda: {'quantity': 0, 'price': 0, 'total': 0, 'product_id': 0})
+    grouped_cart = []
 
     for cart, product in cart_items:
-        if product.product_name in grouped_cart:
-            grouped_cart[product.product_name]['quantity'] += cart.quantity
-            grouped_cart[product.product_name]['total'] += cart.quantity * product.price
-        else:
-            grouped_cart[product.product_name] = {
-                'quantity': cart.quantity,
-                'price': product.price,
-                'total': cart.quantity * product.price,
-                'product_id': product.product_id  # נוסיף את ה-ID כדי לאפשר הסרה
-            }
-            
-    grouped_cart = dict(grouped_cart)
+        grouped_cart.append({
+            'product_name': product.product_name,
+            'quantity': cart.quantity,
+            'price': product.price,
+            'total': cart.quantity * product.price,
+            'product_id': product.product_id  # נוסיף את ה-ID כדי לאפשר הסרה
+        })
 
-    total_amount = sum(cart.quantity * product.price for cart, product in cart_items)
-    
-    return render_template("cart.html", cart_items=cart_items, total_amount=total_amount)
+    total_amount = sum(cart.quantity * product.price for cart,
+                       product in cart_items)
+
+    return render_template("cart.html", cart_items=grouped_cart, total_amount=total_amount)
 # -------------------------
 # 🔹 CRUD for Users (API)
 # -------------------------

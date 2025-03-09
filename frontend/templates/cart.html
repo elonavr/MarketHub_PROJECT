@@ -15,24 +15,33 @@
         <th>Action</th>
       </tr>
     </thead>
+
     <tbody>
-      {% for product_name, item in cart_items.items() %}  {# ✏️ שונה מ- cart, product #}
+      {% for item in cart_items %}
       <tr>
-        <td>{{ product_name }}</td>
-        <td>{{ item.quantity }}</td>  {# ✏️ שונה מ- cart.quantity #}
-        <td>${{ "%.2f"|format(item.price) }}</td>  {# ✏️ שונה מ- product.price #}
-        <td>${{ "%.2f"|format(item.total) }}</td>  {# ✏️ שונה מחישוב ישיר #}
+        <td>{{ item.product_name }}</td>  
         <td>
-          <form action="{{ url_for('remove_from_cart') }}" method="post">  {# ✏️ שונה - אין cart_id #}
-            <input type="hidden" name="product_id" value="{{ item.product_id }}">  {# ✏️ שדה מוסתר עם product_id #}
+          <form action="{{ url_for('update_cart_quantity') }}" method="post" class="d-inline">
+            <input type="hidden" name="product_id" value="{{ item.product_id }}">
+            <button type="submit" name="action" value="decrease" class="btn btn-sm btn-outline-secondary">-</button>
+            <span class="mx-2">{{ item.quantity }}</span>
+            <button type="submit" name="action" value="increase" class="btn btn-sm btn-outline-secondary">+</button>
+          </form>
+        </td>
+        <td>${{ "%.2f"|format(item.price) }}</td>
+        <td>${{ "%.2f"|format(item.total) }}</td>
+        <td>
+          <form action="{{ url_for('remove_from_cart') }}" method="post">
+            <input type="hidden" name="product_id" value="{{ item.product_id }}">
             <button type="submit" class="btn btn-danger">Remove</button>
           </form>
         </td>
       </tr>
       {% endfor %}
     </tbody>
+    
   </table>
-  <h4>Total: ${{ "%.2f"|format(total_amount) if total_amount else '0.00' }}</h4>  {# ✏️ חישוב סכום כולל מעודכן #}
-  <a href="/checkout" class="btn btn-primary">Proceed to Checkout</a>
+  <h4>Total: ${{ "%.2f"|format(total_amount) if total_amount else '0.00' }}</h4>
+  <a href="{{ url_for('checkout') }}" class="btn btn-primary">Proceed to Checkout</a>
 </div>
 {% endblock %}
