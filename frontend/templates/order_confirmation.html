@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order Confirmation</title>
+</head>
+<body>
+    <h1>Thank you for your order!</h1>
+    <p>Your order has been placed successfully.</p>
+
+    <!-- כפתור חזרה לדף הבית -->
+    <a href="{{ url_for('index') }}">
+        <button>Return to Home</button>
+    </a>
+
+    <!-- או כפתור להיסטוריית הזמנות -->
+    <a href="{{ url_for('view_orders') }}">
+        <button>View My Orders</button>
+    </a>
+</body>
+</html>

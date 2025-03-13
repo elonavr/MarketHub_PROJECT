@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from models import db, Cart, Product, Order, OrderDetail 
+from db import db
 from flask_sqlalchemy import SQLAlchemy
-
+from flask_migrate import Migrate
 
 
 # Flask app initialization
@@ -13,11 +13,13 @@ app.secret_key = "your_secret_key"  # מפתח הצפנה לניהול session
 
 
 # Database configuration for PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:admin@localhost:5432/MarketHub'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://elona:elon753951@localhost:5432/MarketHub'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize the database
-db = SQLAlchemy(app)
+db.init_app(app)
+migrate = Migrate(app, db) 
+
 
 # Import models after initializing db
 
@@ -27,9 +29,7 @@ with app.app_context():
     from models.favorite_model import Favorite
     from models.cart_model import Cart
     from models.order_model import Order, OrderDetail
-
     db.create_all()
-
 
 # -------------------------
 # 🔹 HOME & STATIC PAGES
@@ -232,7 +232,6 @@ def add_to_cart_form():
     flash("Product added to cart successfully!", "success")
     return redirect(url_for("products"))
 
-
 @app.route('/update_cart_quantity', methods=['POST'])
 def update_cart_quantity():
     user_id = session.get("user_id")
@@ -243,28 +242,29 @@ def update_cart_quantity():
     product_id = request.form.get("product_id")
     action = request.form.get("action")  # 'increase' או 'decrease'
 
-    cart_item = Cart.query.filter_by(user_id=user_id, product_id=product_id).first()
-    product = Product.query.get(product_id)
+    with app.app_context():  # 👈 הוספת קונטקסט למניעת שגיאות
+        cart_item = Cart.query.filter_by(user_id=user_id, product_id=product_id).first()
+        product = Product.query.get(product_id)
 
-    if not cart_item or not product:
-        flash("Item not found in cart.", "danger")
-        return redirect(url_for("view_cart"))
+        if not cart_item or not product:
+            flash("Item not found in cart.", "danger")
+            return redirect(url_for("view_cart"))
 
-    if action == "increase":
-        if cart_item.quantity < product.stock:
-            cart_item.quantity += 1
-        else:
-            flash("No more stock available.", "warning")
+        if action == "increase":
+            if cart_item.quantity < product.stock:
+                cart_item.quantity += 1
+            else:
+                flash("No more stock available.", "warning")
+        
+        elif action == "decrease":
+            if cart_item.quantity > 1:
+                cart_item.quantity -= 1
+            else:
+                flash("Minimum quantity is 1. To remove, click 'Remove'.", "warning")
+
+        db.session.commit()
     
-    elif action == "decrease":
-        if cart_item.quantity > 1:
-            cart_item.quantity -= 1
-        else:
-            flash("Minimum quantity is 1. To remove, click 'Remove'.", "warning")
-
-    db.session.commit()
     return redirect(url_for("view_cart"))
-
 
 @app.route('/cart/remove', methods=['POST'])  # ✏️ שונה - אין <int:cart_id>
 def remove_from_cart():
@@ -337,6 +337,19 @@ def view_orders():
     user_id = 1  # לדוגמה, זה יכול להיות מזהה המשתמש המחובר
     orders = Order.query.filter_by(user_id=user_id).all()
     return render_template('order_history.html', orders=orders)
+
+@app.route('/supplier/orders')
+def view_supplier_orders():
+    if "user_id" not in session or session["role"] != "supplier":
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("index"))
+
+    supplier_id = session["user_id"]
+
+    # שליפת המוצרים שהוזמנו מהספק הנוכחי בלבד
+    supplier_orders = db.session.query(OrderDetail, Order).join(Order, OrderDetail.order_id == Order.order_id).join(Product, OrderDetail.product_id == Product.product_id).filter(Product.supplier_id == supplier_id).all()
+
+    return render_template("supplier_orders.html", supplier_orders=supplier_orders)
 
 
 @app.route('/products/update_stock', methods=['POST'])
