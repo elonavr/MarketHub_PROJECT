@@ -4,7 +4,7 @@
 <div class="container mt-4">
   <h2>Your Orders</h2>
 
-  {% if orders %}
+  {% if supplier_orders %}
   <table class="table table-striped">
     <thead>
       <tr>
@@ -17,9 +17,9 @@
       </tr>
     </thead>
     <tbody>
-      {% for order in orders %}
-      {% for item in order.order_details %}
-      {% if item.product.supplier_id == session['user_id'] %}
+      {% for supplier_order in supplier_orders %}
+      {% set order = supplier_order.order %}
+      {% for item in supplier_order.order_details %}
       <tr>
         <td>{{ order.order_id }}</td>
         <td>{{ order.user.username }}</td>
@@ -28,7 +28,6 @@
         <td>${{ item.total_price }}</td>
         <td>{{ order.status }}</td>
       </tr>
-      {% endif %}
       {% endfor %}
       {% endfor %}
     </tbody>

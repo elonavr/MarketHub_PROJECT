@@ -8,7 +8,7 @@ class Product(db.Model):
     product_name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     price = db.Column(db.Numeric(10, 2), nullable=False)
-    stock = db.Column(db.Integer, default=0)
+    stock = db.Column(db.Integer, nullable = False, default=0)
     is_available = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     image_url = db.Column(db.String(500), nullable=True)  

@@ -32,9 +32,7 @@
                 <a href="{{ url_for('login') }}">Login</a> |
                 <a href="{{ url_for('register') }}">Register</a>
             {% endif %}
-            {% if session['role'] == 'supplier' %}
-                <a href="{{ url_for('view_supplier_orders') }}" class="btn btn-primary">My Orders</a>
-            {% endif %}
+            
 
         </nav>
     </header>

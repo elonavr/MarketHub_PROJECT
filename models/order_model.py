@@ -10,7 +10,7 @@ class Order(db.Model):
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
     status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
+    user = db.relationship("User", backref="orders")
     order_details = db.relationship('OrderDetail', back_populates='order', lazy=True)
 
     def __repr__(self):

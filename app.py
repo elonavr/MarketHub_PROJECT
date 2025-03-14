@@ -232,6 +232,29 @@ def add_to_cart_form():
     flash("Product added to cart successfully!", "success")
     return redirect(url_for("products"))
 
+@app.route('/products/delete', methods=['POST'])
+def delete_product():
+    if "user_id" not in session or session["role"] != "supplier":
+        flash("Unauthorized action.", "danger")
+        return redirect(url_for("products"))
+
+    product_id = request.form.get("product_id")
+
+    # חיפוש המוצר לוודא שהוא שייך למוכר המחובר
+    product = Product.query.filter_by(product_id=product_id, supplier_id=session["user_id"]).first()
+
+    if not product:
+        flash("Product not found or you do not have permission to delete it.", "danger")
+        return redirect(url_for("products"))
+
+    # מחיקת המוצר ממסד הנתונים
+    db.session.delete(product)
+    db.session.commit()
+
+    flash("Product deleted successfully!", "success")
+    return redirect(url_for("products"))
+
+
 @app.route('/update_cart_quantity', methods=['POST'])
 def update_cart_quantity():
     user_id = session.get("user_id")
@@ -334,9 +357,47 @@ def view_order(order_id):
 
 @app.route('/orders', methods=['GET'])
 def view_orders():
-    user_id = 1  # לדוגמה, זה יכול להיות מזהה המשתמש המחובר
-    orders = Order.query.filter_by(user_id=user_id).all()
-    return render_template('order_history.html', orders=orders)
+    if "user_id" not in session:
+        flash("Please log in to view your orders.", "danger")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    user_role = session["role"]
+
+    if user_role == "customer":
+        # קונים רואים את כל ההזמנות שלהם
+        orders = Order.query.filter_by(user_id=user_id).all()
+        return render_template('order_history.html', orders=orders)
+
+    elif user_role == "supplier":  # 👈 בדוק שיש נקודתיים אחרי `elif`
+        # ספקים רואים רק את המוצרים שהוזמנו מהם
+        supplier_orders = db.session.query(OrderDetail, Order, Product).join(
+            Order, OrderDetail.order_id == Order.order_id
+        ).join(
+            Product, OrderDetail.product_id == Product.product_id
+        ).filter(
+            Product.supplier_id == user_id
+        ).all()
+
+        if not supplier_orders:
+            flash("No orders found for your products.", "warning")
+
+        # ארגון הנתונים כך שכל ספק יראה רק את הפריטים שלו בכל הזמנה
+        supplier_order_dict = {}
+        for order_detail, order, product in supplier_orders:
+            if order.order_id not in supplier_order_dict:
+                supplier_order_dict[order.order_id] = {
+                    "order": order,
+                    "order_details": []
+                }
+            supplier_order_dict[order.order_id]["order_details"].append(order_detail)
+
+        return render_template("supplier_orders.html", supplier_orders=supplier_order_dict.values())
+
+    else:  # 👈 במקרה שמשהו לא תקין
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("index"))
+
 
 @app.route('/supplier/orders')
 def view_supplier_orders():
