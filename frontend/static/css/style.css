@@ -1,67 +1,166 @@
-/* בסיס לעמוד */
+/*****************************************************************************
+  1) GLOBAL RESETS & BASE STYLING
+******************************************************************************/
+html,
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
+    min-height: 100vh;
     margin: 0;
     padding: 0;
 }
 
-/* כותרת ראשית */
-h1 {
-    text-align: center;
-    color: #333;
-    margin-top: 20px;
-}
-
-/* קונטיינר למוצרים */
-.product-container {
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 20px;
-    padding: 20px;
+    flex-direction: column;
+    overflow-x: hidden;
 }
 
-/* כרטיס מוצר */
-.product-card {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    width: 250px;
-    padding: 20px;
-    text-align: center;
-    transition: transform 0.3s ease;
+.page-background {
+    background-image: url("/static/images/Frame 9 (1).jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center -50px;
+    min-height: 100vh;
 }
 
-.product-card:hover {
-    transform: scale(1.05);
+.content-area {
+    padding-top: 0px;
 }
 
-/* תמונת מוצר */
-.product-image {
+a {
+    text-decoration: none;
+}
+
+main.flex-fill {
+    flex: 1;
+}
+
+.navbar .btn {
+    padding: 4px 10px;
+    font-size: 14px;
+}
+
+nav.navbar {
     width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 8px 8px 0 0;
+    padding-bottom: 0px;
+    padding-top: 0px;
+    min-height: 10px;
 }
 
-/* שם המוצר */
-.product-name {
-    font-size: 1.2em;
-    margin: 10px 0;
-    color: #333;
+.navbar .form-control,
+.navbar input {
+    height: 30px;
+    font-size: 14px;
+    padding: 4px 10px;
+    line-height: 1;
 }
 
-/* מחיר המוצר */
-.product-price {
-    font-size: 1em;
-    color: #28a745;
+.navbar .nav-link {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: 14px;
+    line-height: 1.2;
+}
+
+.navbar-nav {
+    display: flex;
+    align-items: center;
+}
+
+.user-info {
+    position: relative;
+}
+
+footer {
+    position: static;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f8f9fa;
+    text-align: center;
+    padding: 10px 0;
+}
+
+.footer p {
+    margin-right: 30px;
+}
+
+/*****************************************************************************
+  2) CONTAINER & LAYOUT CLASSES
+******************************************************************************/
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Login container with consistent sizing */
+.login-container {
+    max-width: 400px;
+    margin: 60px auto;
+    padding: 30px;
+    background-color: #fff;
+    margin-top: 0 !important; 
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+.login-container input,
+.login-container button,
+.login-container a.btn {
+    width: 100%;
+}
+
+/*****************************************************************************
+  3) SEARCH INPUT & GROUPS
+******************************************************************************/
+.search-input {
+    max-width: 400px;
+    width: 100%;
+}
+
+.search-input-group {
+    overflow: hidden;
+    border-radius: 50px;
+}
+
+.search-field {
+    border: none;
+    width: 300px;
+}
+
+.search-results {
+    padding-bottom: 50px;
+}
+
+/*****************************************************************************
+  4) SEPARATOR ELEMENT
+******************************************************************************/
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.separator hr {
+    flex: 1;
+    border: none;
+    border-top: 1px solid #ccc;
+}
+
+.separator span {
+    margin: 0 10px;
+    color: #888;
     font-weight: bold;
 }
 
-/* כפתור רכישה */
+/*****************************************************************************
+  5) BUTTONS & COMMON BUTTON STYLES
+******************************************************************************/
+/* Generic button styling */
 .btn {
-    background-color: #007bff;
+    background-color: #1f5996;
     color: white;
     padding: 10px 20px;
     margin-top: 10px;
@@ -72,5 +171,410 @@ h1 {
 }
 
 .btn:hover {
-    background-color: #0056b3;
+    background-color: #0971e1;
+    color: white;
+}
+
+/* More custom button styles */
+.custom-btn {
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 16px;
+    transition: background-color 0.2s ease;
+}
+
+.custom-btn:hover {
+    background-color: #2f9c94;
+    text-decoration: none;
+}
+
+.bg-teal {
+    background-color: #3eaca3;
+}
+
+/* Create-account button style */
+.create-account-btn {
+    border: 1px solid #ddd;
+    color: white;
+}
+
+/*****************************************************************************
+  6) CATEGORY & SUBCATEGORY MENU
+******************************************************************************/
+.category-button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-decoration: none;
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.category-wrapper {
+    position: relative;
+    text-decoration: none;
+}
+
+.subcategory-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100px;
+    background-color: white;
+    border: 1px solid #ccc;
+    z-index: 10;
+    text-decoration: none;
+}
+
+.subcategory-item {
+    display: block;
+    padding: 8px 10px;
+    color: black;
+    text-decoration: none;
+}
+
+.subcategory-item:hover {
+    background-color: #f0f0f0;
+    text-decoration: none;
+}
+
+.category-wrapper:hover .subcategory-menu {
+    display: block;
+}
+
+/*****************************************************************************
+  7) BREADCRUMB
+******************************************************************************/
+.breadcrumb {
+    background: none;
+    padding: 0;
+    font-size: 0.9rem;
+}
+
+.breadcrumb a {
+    text-decoration: none;
+}
+
+/*****************************************************************************
+  8) PRODUCT CARD, GRID & CART INTERACTIONS
+******************************************************************************/
+/* Layout for product listing */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    justify-items: center;
+}
+
+.margin-700 {
+    margin-top: 700px;
+}
+
+/* Individual product card */
+.product-card {
+    width: 240px;
+    height: auto;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    text-align: center;
+    transition: transform 0.2s ease;
+    position: relative;
+}
+
+.product-card:hover {
+    transform: scale(1.05) translateY(-5px);
+}
+
+/* Show add-to-cart form on hover */
+.product-card:hover .add-to-cart-form {
+    display: block;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Product image wrapper */
+.product-image-wrapper {
+    position: relative;
+    height: 260px;
+}
+
+/* Product image styling */
+.product-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background-color: white;
+}
+
+/*****************************************************************************
+  9) CART & PURCHASE FORMS
+******************************************************************************/
+/* Hidden form that appears on hover */
+.add-to-cart-form {
+    display: none;
+    margin-top: 10px;
+}
+
+/* Stock warning message */
+.stock-warning {
+    position: absolute;
+    bottom: 55px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    padding: 6px 12px;
+    border: 1px solid #dc3545;
+    border-radius: 6px;
+    color: #dc3545;
+    font-weight: 600;
+    display: none;
+    z-index: 10;
+}
+
+/* Hover action (like quick buttons) on product card */
+.hover-action {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    width: 100%;
+    height: 40px;
+    background: none;
+    opacity: 0;
+    transform: translateX(-50%);
+}
+
+.product-card:hover .hover-action {
+    opacity: 1;
+}
+
+/*****************************************************************************
+  10) CUSTOM CART BUTTON
+******************************************************************************/
+.custom-cart-btn {
+    width: 100%;
+    max-width: 140px;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 10px 20px;
+    background-color: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: none;
+}
+
+.custom-cart-btn.out-of-stock {
+    background-color: #cccccc;
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.custom-cart-btn:hover {
+    background-color: #1d4ed8;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.custom-cart-btn:active {
+    transform: scale(0.98);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.custom-cart-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+}
+
+/*****************************************************************************
+  11) ADD-PRODUCT FORM (ADMIN/INPUT)
+******************************************************************************/
+.add-product-form {
+    max-width: 500px;
+    margin: 60px auto;
+    margin-top: -120px;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba; /* Incomplete RGBA left as is */
+    font-size: medium;
+}
+
+/* Title within the add-product form */
+.custom-title {
+    text-align: left;
+    margin-left: -170px;
+}
+
+/*****************************************************************************
+  12) USER HOVER MENU
+******************************************************************************/
+.user-hover-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 9999;
+    min-width: 220px;
+    border-radius: 10px;
+    background-color: white;
+    color: black;
+}
+
+.user-hover-wrapper:hover .user-hover-menu {
+    display: block;
+}
+
+.nav-link i {
+    color: black;
+}
+
+/*****************************************************************************
+  13) MAIN HEADINGS
+******************************************************************************/
+.welcome-title {
+    font-weight: 700;
+    color: white;
+}
+
+.welcome-subtitle {
+    color: white;
+    font-weight: 500;
+}
+
+.welcome-user {
+    font-weight: 700;
+    font: bold;
+    margin-top: -100px;
+    padding-bottom: 100px;
+}
+
+/*****************************************************************************
+  14) RELOCATED INLINE STYLES AS CLASSES
+      (moved from base.html to keep code DRY and professional)
+******************************************************************************/
+.header-icon-button {
+    background-color: #f8f9fa;
+    color: #000;
+    border: 1px solid #f8f9fa;
+    transition: background-color 0.3s ease;
+    white-space: nowrap;
+}
+
+.header-icon-button:hover {
+    background-color: #e0e0e0 !important;
+    color: #111;
+    border-color: #ddd;
+}
+
+.btn-custom-signin,
+.btn-custom-signin:hover {
+    background-color: #f8f9fa;
+    color: black;
+    border-color: #f8f9fa;
+    transition: background-color 0.3s ease;
+}
+
+.btn-white-black {
+    background-color: white !important;
+    color: black !important;
+    border-color: white !important;
+}
+
+.btn-6d6deb-white {
+    background-color: rgb(109, 109, 235) !important;
+    color: white !important;
+}
+
+.btn-white-6d6deb {
+    background-color: white !important;
+    color: rgb(109, 109, 235) !important;
+}
+
+.circle-44-f8f9fa {
+    width: 44px !important;
+    height: 44px !important;
+    background-color: #f8f9fa !important;
+}
+
+.floating-add-btn {
+    position: fixed !important;
+    bottom: 30px !important;
+    right: 30px !important;
+    width: 60px !important;
+    height: 60px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 999 !important;
+}
+
+.dropdown-icon {
+    padding: 10px;
+}
+
+.icon-half-size {
+    font-size: 50%;
+}
+
+.shop-now-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    border-radius: 30px;
+    background: white;
+    color: black;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    width: 200px;
+}
+
+.shop-now-btn:hover {
+    background: linear-gradient(90deg, #339c93 0%, #519ca6 100%);
+    transform: translateY(-3px);
+}
+
+@media (max-width: 576px) {
+    .shop-now-btn {
+        font-size: 16px;
+        padding: 10px 20px;
+    }
+}
+
+/*****************************************************************************
+  15) STOCK & DELETE BUTTONS
+      (Extracted from inline styles in _product_card.html)
+******************************************************************************/
+.stock-btn {
+    background-color: #f0f0f0;
+    color: black;
+    border-radius: 0.375rem;
+    transition: 0.3s;
+}
+
+.delete-product-btn {
+    background-color: #f0f0f0;
+    color: black;
+    border-radius: 0.375rem;
+    transition: 0.3s;
 }

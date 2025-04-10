@@ -1,17 +1,40 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<p>Your one-stop shop for all your needs.</p>
+<div class="text-center">
+    <h1 class="welcome-title">WELCOME TO MarketHub</h1>
+    <h4 class="welcome-subtitle">Browse our amazing categories and products!</h4>
+    {% if session.get('role') == 'customer' or not session.get('user_id') %}
+    <button class="shop-now-btn mt-2" onclick="scrollToProducts()">SHOP NOW</button>
+    {% endif %}
+  {% if request.endpoint == 'index' and session.get('role') == 'supplier' %} <h1 class="welcome-user">Welcom {{session.get('username')}} </h1> {% endif %}
+
+</div>
+
+
+{% if products %}
+<section id="products" class="product-grid {% if request.endpoint == 'index' and (session.get('role') == 'customer' 
+    or not session.get('user_id')) %}margin-700{% endif %}">
+    {% for product in products %}
+    {% include 'partials/_product_card.html' %}
+    {% endfor %}
+</section>
+{% else %}
+<div class="text-center text-muted mt-5">
+    <i class="fas fa-box-open fa-3x mb-3"></i>
+    <p>No products found in this category.</p>
+</div>
+{% endif %}
+
+<script>
+    function scrollToProducts() {
+        const element = document.getElementById("products");
+        if (!element) return; 
+        
+        const offset = 80;
+        const y = element.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: y, left: 0, behavior: 'smooth' });
+    }
+</script>
+
 {% endblock %}
-
-<h2>Add New Product</h2>
-<form action="/products" method="post">
-    <label for="product_name">Product Name:</label>
-    <input type="text" name="product_name" required><br>
-
-    <label for="price">Price:</label>
-    <input type="number" name="price" step="0.01" required><br>
-
-    <button type="submit">Add Product</button>
-</form>
-

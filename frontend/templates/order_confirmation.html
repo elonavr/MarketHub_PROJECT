@@ -1,20 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Order Confirmation</title>
+  <meta charset="UTF-8">
+  <title>Order Confirmation</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .confirmation-container {
+      max-width: 600px;
+      margin: 100px auto;
+      padding: 40px;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .confirmation-container h1 {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .confirmation-container p {
+      color: #555;
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+    }
+    .confirmation-container .btn {
+      margin: 5px;
+      min-width: 140px;
+    }
+  </style>
 </head>
 <body>
+  <div class="confirmation-container">
     <h1>Thank you for your order!</h1>
     <p>Your order has been placed successfully.</p>
-
-    <!-- כפתור חזרה לדף הבית -->
-    <a href="{{ url_for('index') }}">
-        <button>Return to Home</button>
-    </a>
-
-    <!-- או כפתור להיסטוריית הזמנות -->
-    <a href="{{ url_for('view_orders') }}">
-        <button>View My Orders</button>
-    </a>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">Return to Home</a>
+    <a href="{{ url_for('view_orders') }}" class="btn btn-primary">View My Orders</a>
+  </div>
 </body>
 </html>

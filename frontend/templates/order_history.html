@@ -1,16 +1,25 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Your Order History</h1>
+<div class="container mt-5">
+    <h2 class="text-center mb-5" style="font-weight: bold; font-size: 2rem;">Your Order History</h2>
 
-<ul>
-    {% for order in orders %}
-    <li>
-        <a href="{{ url_for('view_order', order_id=order.order_id) }}">Order #{{ order.order_id }}</a>
-        - Status: {{ order.status }} 
-        - Date: {{ order.order_date }}
-    </li>
-    {% endfor %}
-</ul>
-
+    {% if orders %}
+    <ul class="list-group">
+        {% for order in orders %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <a href="{{ url_for('view_order', order_id=order.order_id) }}">
+                    <strong>Order #{{ order.order_id }}</strong>
+                </a>
+                <span class="ml-3 text-muted">({{ order.order_date.strftime('%Y-%m-%d %H:%M') }})</span>
+            </div>
+            <span class="badge badge-success badge-pill">{{ order.status }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-center text-muted mt-4">You have no orders yet.</p>
+    {% endif %}
+</div>
 {% endblock %}

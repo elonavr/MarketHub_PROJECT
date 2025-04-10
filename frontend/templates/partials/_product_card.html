@@ -1,0 +1,89 @@
+<div class="product-card shadow-lg rounded-3 overflow-hidden position-relative">
+
+  <div class="product-image-wrapper position-relative">
+    <img class="card-img-top img-fluid" src="{{ product.image_url }}" alt="Product image">
+
+    <!-- Add-to-Cart Form -->
+    <form onsubmit="return checkStock(this)" class="hover-action product-card-form" data-stock="{{ product.stock }}"
+      method="post">
+      <input type="hidden" name="user_id" value="{{ session.get('user_id', '') }}">
+      <input type="hidden" name="product_id" value="{{ product.product_id }}">
+      <input type="hidden" name="quantity" value="1">
+
+      <!-- If product has stock OR if user isn't supplier, show Add to Cart; else out of stock -->
+      {% if not session.get('role') == 'supplier' %}
+      {% if product.stock > 0 %}
+      <button type="submit" class="custom-cart-btn">Add to Cart</button>
+      {% else %}
+      <button class="custom-cart-btn out-of-stock" disabled>Out of Stock</button>
+      {% endif %}
+      {% endif %}
+    </form>
+
+    <!-- Supplier Role Warning (hidden by default) -->
+    <div class="role-warning text-danger text-center mt-2" style="display: none;">
+      You must be a buyer to add items to the cart.
+    </div>
+
+    <!-- Stock Warning (hidden by default) -->
+    <div class="stock-warning text-danger mt-2" style="display: none;">
+      Out of stock
+    </div>
+  </div>
+
+  <div class="card-body text-center">
+    <h5 class="card-title mb-1">{{ product.product_name }}</h5>
+    <p class="card-text text-muted">
+      ${{ product.price }}
+    </p>
+
+    {% if session.get('role') == 'supplier' and product.supplier_id == session.get('user_id') %}
+    <!-- Supplier Controls -->
+    <p class="card-text small">Stock: {{ product.stock }}</p>
+
+    <!-- Increase/Decrease Stock -->
+    <form action="/products/update_stock" method="post" class="d-flex justify-content-center align-items-center mb-2">
+      <input type="hidden" name="product_id" value="{{ product.product_id }}">
+
+      <!-- Decrease Button -->
+      <button type="submit" name="action" value="decrease" class="btn btn-outline-danger btn-sm stock-btn"
+        title="Decrease Stock">
+        -
+      </button>
+
+      <span class="mx-2">{{ product.stock }}</span>
+
+      <!-- Increase Button -->
+      <button type="submit" name="action" value="increase" class="btn btn-outline-success btn-sm stock-btn"
+        title="Increase Stock">
+        +
+      </button>
+    </form>
+
+    <!-- Delete Product -->
+    <form action="{{ url_for('delete_product') }}" method="post"
+      onsubmit="return confirm('Are you sure you want to delete this product?');">
+      <input type="hidden" name="product_id" value="{{ product.product_id }}">
+      <button type="submit" class="btn btn-outline-danger btn-sm w-100 delete-product-btn" title="Delete Product">
+        <i class="fas fa-trash"></i> Delete
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Hover script for .hover-action -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".product-card").forEach(function (card) {
+      card.addEventListener("mouseenter", function () {
+        const hoverAction = card.querySelector(".hover-action");
+        if (hoverAction) hoverAction.style.display = "block";
+      });
+      card.addEventListener("mouseleave", function () {
+        const hoverAction = card.querySelector(".hover-action");
+        if (hoverAction) hoverAction.style.display = "none";
+      });
+    });
+  });
+</script>

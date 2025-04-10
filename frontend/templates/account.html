@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="text-center mb-5" style="font-weight: bold; font-size: 2rem;">My Account</h2>
+
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+
+      <!-- Profile Section -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Profile</h5>
+          <p class="card-text"><strong>Name:</strong> {{ session['username'] }}</p>
+          <p class="card-text"><strong>Role:</strong> {{session['role']}} </p>
+        </div>
+      </div>
+
+
+      <!-- Orders Section -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Orders</h5>
+          <p class="card-text">View your past purchases.</p>
+          <a href="{{ url_for('view_supplier_orders') }}" class="btn btn-outline-primary btn-sm">View Order History</a>
+        </div>
+      </div>
+
+      <!-- Cart or Product Management Section (depends on role) -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Cart</h5>
+          {% if session.get('role') == 'customer' %}
+          <p class="card-text">Go to your current shopping cart.</p>
+          <a href="{{ url_for('view_cart') }}" class="btn btn-outline-primary btn-sm">Go to Cart</a>
+          {% elif session.get('role') == 'supplier' %}
+          <p class="card-text">Go to your current suppling cart.</p>
+          <a href="{{ url_for('my_products') }}" class="btn btn-outline-primary btn-sm">Go To Your Supply Cart</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Support Section -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Support</h5>
+          <p class="card-text">Need help? Contact us.</p>
+          <a href="#" class="btn btn-outline-primary btn-sm">Contact Support</a>
+        </div>
+      </div>
+
+      <!-- Logout Section -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Logout</h5>
+          <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Log Out</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

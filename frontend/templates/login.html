@@ -3,26 +3,81 @@
 {% block title %}Login - MarketHub{% endblock %}
 
 {% block content %}
-    <h2>Login</h2>
-    <form action="/login" method="post">
-        <label for="username">Username:</label>
-        <input type="text" name="username" required><br>
+<div class="login-container">
 
-        <label for="password">Password:</label>
-        <input type="password" name="password" required><br>
+    <h2 class="text-center mb-4" style="margin-right: 70%;">Sign in</h2>
+    <form id="login-form">
+        <label for="username">Username</label><br>
+        <input type="text" class="form-control" name="username" id="username" required><br>
 
-        <button type="submit">Login</button>
+        <div id="password-section" style="display: none;">
+            <label for="password">Password</label><br>
+            <input type="password" class="form-control" name="password" id="password"><br>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="submit-button">Next</button>
     </form>
 
-    <!-- Display flash messages for errors -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li style="color: red;">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
+    <div id="login-message" class="mt-3 text-danger"></div>
+
+
+    <div class="text-center mt-3">
+        <a href="#">Trouble Signing In?</a>
+    </div>
+
+    <div class="separator">
+        <hr><span>Or</span>
+        <hr>
+    </div>
+
+    <div class="text-center">
+        <a href="{{ url_for('register') }}" class="btn btn-light btn-block create-account-btn">Create Account</a>
+    </div>
+</div>
+
+</div>
+
+
+<!-- Display flash messages for errors -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<ul>
+    {% for category, message in messages %}
+    <li style="color: red;">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+
+<script>
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+  
+      const username = document.getElementById('username').value;
+      const passwordInput = document.getElementById('password');
+      const password = passwordInput ? passwordInput.value : null;
+      const messageBox = document.getElementById('login-message');
+  
+      const response = await fetch("{{ url_for('login_ajax') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+  
+      const result = await response.json();
+  
+      if (result.status === 'ask_password') {
+        document.getElementById('password-section').style.display = 'block';
+        document.getElementById('submit-button').innerText = 'Login';
+        messageBox.innerText = '';
+      } else if (result.status === 'success') {
+        window.location.href = "/";
+      } else {
+        messageBox.innerText = result.message;
+      }
+    });
+  </script>
+  
+
 {% endblock %}
 

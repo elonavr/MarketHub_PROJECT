@@ -3,31 +3,86 @@
 {% block title %}Add Product - MarketHub{% endblock %}
 
 {% block content %}
+<h2 class="custom-title">Add a New Product</h2>
+
+<div class="add-product-form">
     <div class="container mt-5">
-        <h2>Add a New Product</h2>
+
+        <!-- Product submission form -->
         <form action="/products/add" method="post">
+
+            <!-- Product name input -->
             <div class="form-group">
                 <label for="product_name">Product Name:</label>
                 <input type="text" class="form-control" name="product_name" required>
             </div>
 
+            <!-- Product price input -->
             <div class="form-group">
                 <label for="price">Price:</label>
                 <input type="number" class="form-control" name="price" step="0.01" required>
             </div>
 
+            <!-- Product stock quantity input -->
             <div class="form-group">
                 <label for="stock">Stock Quantity:</label>
                 <input type="number" class="form-control" name="stock" min="0" required>
             </div>
-            
 
+            <!-- Category selection -->
+            <div class="form-group">
+                <label for="category_id">Category:</label>
+                <select class="form-control" id="category_id" name="category_id" required>
+                    <option value="">Choose category</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.category_id }}">{{ cat.category_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Sub-category selection (dynamically loaded via JavaScript) -->
+            <div class="form-group">
+                <label for="subcategory_id">Sub-category:</label>
+                <select class="form-control" id="subcategory_id" name="subcategory_id" required>
+                    <option value="">Choose sub-category</option>
+                </select>
+            </div>
+
+            <!-- Optional image URL input -->
             <div class="form-group">
                 <label for="image_url">Image URL:</label>
                 <input type="text" class="form-control" name="image_url">
             </div>
 
+            <!-- Submit button -->
             <button type="submit" class="btn btn-primary">Add Product</button>
         </form>
     </div>
+</div>
+
+<!-- JavaScript to load sub-categories based on selected category -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const categorySelect = document.getElementById("category_id");
+        const subcategorySelect = document.getElementById("subcategory_id");
+
+        categorySelect.addEventListener("change", function () {
+            const categoryId = this.value;
+            subcategorySelect.innerHTML = '<option value="">Choose sub-category</option>';
+
+            if (categoryId) {
+                fetch(`/subcategories/${categoryId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(sub => {
+                            const option = document.createElement("option");
+                            option.value = sub.id;
+                            option.textContent = sub.name;
+                            subcategorySelect.appendChild(option);
+                        });
+                    });
+            }
+        });
+    });
+</script>
 {% endblock %}

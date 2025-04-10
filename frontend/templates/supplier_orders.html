@@ -17,18 +17,15 @@
       </tr>
     </thead>
     <tbody>
-      {% for supplier_order in supplier_orders %}
-      {% set order = supplier_order.order %}
-      {% for item in supplier_order.order_details %}
+      {% for detail, order, product in supplier_orders %}
       <tr>
         <td>{{ order.order_id }}</td>
         <td>{{ order.user.username }}</td>
-        <td>{{ item.product.product_name }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>${{ item.total_price }}</td>
+        <td>{{ product.product_name }}</td>
+        <td>{{ detail.quantity }}</td>
+        <td>${{ detail.total_price }}</td>
         <td>{{ order.status }}</td>
       </tr>
-      {% endfor %}
       {% endfor %}
     </tbody>
   </table>

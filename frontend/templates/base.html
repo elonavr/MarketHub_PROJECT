@@ -5,49 +5,211 @@
     <meta charset="UTF-8">
     <title>MarketHub</title>
 
-    <!-- Add Bootstrap CSS -->
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Add your custom styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Custom Styles -->
+    <!-- //change: Version bumped to v=2 as in your code, referencing the new style file. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=2) }}">
 </head>
 
 <body>
     <header>
-        <h1>Welcome to MarketHub (:</h1>
-        <nav>
-            <a href="{{ url_for('index') }}">Home</a> |
-            <a href="{{ url_for('products') }}">Products</a> |
+        <div>
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <!-- Logo / Home link -->
+                <a class="navbar-brand" href="{{ url_for('index') }}">
+                    MarketHub
+                </a>
 
-            {% if session.get("user_id") %}
-                <a href="{{ url_for('view_orders') }}">My Orders</a> |
-                <a href="{{ url_for('logout') }}">Logout ({{ session['username'] }})</a>
+                <!-- Toggler, Hamburger menu for small screens -->
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
-                {% if session['role'] == 'supplier' %}
-                    <a href="{{ url_for('add_product_api') }}" class="btn btn-success">Add Product To Sell</a>
-                {% elif session['role'] == 'customer' %}
-                    <a href="{{ url_for('view_cart') }}" class="btn btn-warning">🛒 Cart</a>
-                {% endif %}
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a> |
-                <a href="{{ url_for('register') }}">Register</a>
+                <!-- Search bar-->
+                <div class="d-flex justify-content-center flex-grow-1">
+                    <form action="{{ url_for('search') }}" method="GET" class="search-input">
+                        <div class="input-group search-input-group">
+                            <input type="text" name="q" class="form-control search-field" placeholder="search"
+                                aria-label="Search">
+                        </div>
+                    </form>
+                </div>
+
+                <div class="collapse navbar-collapse d-flex align-items-center" id="navbarNav">
+
+                    <!-- Logout link (if logged in) -->
+                    <ul class="navbar-nav mr-auto d-flex align-items-center">
+                        {% if session.get("user_id") %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">
+                                Logout ({{ session['username'] }})
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+
+                    <!-- Categories Section -->
+                    <div class="d-flex flex-wrap justify-content-center w-100">
+                        <div class="container d-flex flex-wrap justify-content-start">
+                            {% for cat in categories %}
+                            <div class="nav-item dropdown category-wrapper">
+                                <a class="nav-link category-button"
+                                    href="{{ url_for('show_category', category_id=cat.category_id) }}">
+                                    {{ cat.category_name }}
+                                </a>
+                                <!-- Subcategory dropdown -->
+                                <div class="subcategory-menu">
+                                    {% for sub in cat.subcategories %}
+                                    <a href="{{ url_for('show_subcategory', subcategory_id=sub.subcategory_id) }}"
+                                        class="subcategory-item">
+                                        {{ sub.subcategory_name }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Right-Side Icons / User Dropdown / Cart or Store -->
+                    <ul class="navbar-nav ml-auto">
+                        <div class="ms-auto d-flex align-items-center pr-3">
+                            <!-- Sign in / Account Button -->
+                            <div class="user-hover-wrapper position-relative d-flex align-items-center">
+                                <a href="{{ url_for('login') }}"
+                                    class="btn btn-light rounded-pill px-3 d-flex align-items-center header-icon-button"
+                                    style="padding-bottom: 20px;">
+                                    <i class="fas fa-user fa-lg mr-2 text-dark"></i>
+                                    {% if session.get("user_id") %}
+                                    {{ session['username'] }}
+                                    {% else %}
+                                    Sign in
+                                    {% endif %}
+                                </a>
+                                <!-- Hover menu with conditional options -->
+                                <div class="user-hover-menu shadow p-3">
+                                    {% if session.get("user_id") %}
+                                    <!-- Logged-in user -->
+                                    <a href="{{ url_for('account') }}" class="dropdown-item">
+                                        <i class="fa-regular fa-circle-user dropdown-icon"></i> My Account
+                                    </a>
+
+                                    {% if session.get("role") == "supplier" %}
+                                    <!-- Supplier-specific menu items -->
+                                    <a href="{{ url_for('view_supplier_orders') }}" class="dropdown-item">
+                                        <i class="fa-regular fa-file dropdown-icon"></i> Orders
+                                    </a>
+
+                                    <a href="{{ url_for('my_products') }}" class="dropdown-item">
+                                        <i class="fa-solid fa-box dropdown-icon"></i> My Products
+                                    </a>
+
+                                    {% else %}
+                                    <!-- Customer-specific orders -->
+                                    <a href="{{ url_for('view_orders') }}" class="dropdown-item">
+                                        <i class="fa-regular fa-file dropdown-icon"></i> Orders
+                                    </a>
+                                    {% endif %}
+
+                                    <div class="dropdown-divider"></div>
+                                    <!-- Logout -->
+                                    <a href="{{ url_for('logout') }}" class="dropdown-item">
+                                        <i class="fa-solid fa-sign-out-alt dropdown-icon"></i> Log Out
+                                    </a>
+                                    {% else %}
+                                    <!-- Menu for guests -->
+                                    <a href="{{ url_for('login') }}" class="dropdown-item">
+                                        <i class="fa-regular fa-circle-user dropdown-icon"></i> My Account
+                                    </a>
+                                    <a href="{{ url_for('login') }}" class="dropdown-item">
+                                        <i class="fa-regular fa-file dropdown-icon"></i> Orders
+                                    </a>
+
+                                    <div class="dropdown-divider"></div>
+                                    <a href="{{ url_for('register') }}" class="dropdown-item">
+                                        <i class="fa-solid fa-user-plus dropdown-icon"></i> Create Account
+                                    </a>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+
+                            <!-- Cart (for customers) or store icon (for suppliers) -->
+                            {% if session.get("role") == "customer" or not session.get("user_id") %}
+                            <a class="btn btn-light btn rounded-circle d-flex align-items-center justify-content-center circle-44-f8f9fa header-icon-button"
+                                href="{{ url_for('view_cart') }}" title="My Cart" style="padding-bottom: 20px;">
+                                <i class="fas fa-shopping-cart fa-lg text-dark"></i>
+                            </a>
+                            {% elif session.get("role") == "supplier" %}
+                            <a class="btn btn-light rounded-circle d-flex align-items-center justify-content-center circle-44-f8f9fa header-icon-button dropdown-item"
+                                href="{{ url_for('my_products') }}" title="My Products" style="padding-bottom: 20px">
+                                <i class="fas fa-store fa-lg text-dark dropdown-icon"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </ul>
+
+                </div>
+            </nav>
+
+            <!-- Floating "Add Product" button for suppliers -->
+            {% if session.get("role") == "supplier" %}
+            <a href="{{ url_for('add_product_api') }}" class="btn btn-success rounded-circle shadow floating-add-btn"
+                data-toggle="tooltip" title="Add new product">
+                <i class="fas fa-plus"></i>
+            </a>
             {% endif %}
-            
-
-        </nav>
+        </div>
     </header>
 
-    <main>
-        {% block content %}{% endblock %}
+    <main
+        class="flex-fill {% if request.endpoint == 'index' and (session.get('role') == 'customer' or not session.get('user_id')) %}page-background{% endif %}">
+        <div class="content-area">
+            <div class="container my-4">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+
+
     </main>
 
-    <footer>
+    <footer class="footer">
         <p>&copy; 2025 MarketHub</p>
     </footer>
 
-    <!-- Add Bootstrap JS -->
+    <!-- jQuery & Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <!-- Tooltip and cart stock warning logic -->
+    <script>
+        $(function () { $('[data-toggle="tooltip"]').tooltip(); });
+
+        function checkStock(form) {
+            const stock = parseInt(form.getAttribute("data-stock"));
+            const warning = form.querySelector('.stock-warning');
+
+            if (stock <= 0) {
+                warning.style.display = 'block';
+                setTimeout(() => {
+                    warning.style.display = 'none';
+                }, 3000);
+                return false;
+            }
+
+            form.action = "/cart/add_form";
+            form.submit();
+            return false;
+        }
+    </script>
+  
 </body>
 
 </html>
