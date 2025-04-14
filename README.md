@@ -1,9 +1,33 @@
-# MarketHub_PROJECT
+# MarketHub
 
 ## Overview
 MarketHub is a full-stack e-commerce web application built using Flask. It enables customers to browse and purchase products across various categories while allowing suppliers to manage their inventory efficiently. The platform provides a seamless shopping experience, intuitive user interface, and robust backend logic.
 
 ---
+
+## Preview
+
+### Homepage  
+![Homepage](frontend/static/images/homepage.png)
+
+### Login Page  
+![Login](frontend/static/images/login_form.png)
+
+### Product Page  
+![Product](frontend/static/images/product_page.png)
+
+### Checkout Flow  
+![Checkout](frontend/static/images/checkout.png)
+
+### Order History Page
+![Order History](frontend/static/images/Order_History.png)
+
+### Order Summery Page 
+![Order](frontend/static/images/order_page.png)
+
+
+---
+
 
 ## Technologies Used
 - Python 3.11
@@ -87,4 +111,21 @@ MarketHub_PROJECT/
 - Real-time stock management and quantity controls
 - Order history for both customers and suppliers
 - Responsive UI with hover effects and form validation
+- Hashed password storage using Werkzeug for secure authentication
+- CSRF protection implemented via Flask-WTF forms
+
+
+---
+
+## Future Improvements
+
+- Role-based permissions for advanced admin functionality
+- REST API support for mobile or external integrations
+- Enhanced search and filtering capabilities
+- Real-time notifications for orders and status changes
+- Multi-language support for broader accessibility
+- Comprehensive test coverage and CI/CD integration
+
+
+
 
