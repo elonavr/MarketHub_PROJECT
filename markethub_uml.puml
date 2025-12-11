@@ -1,9 +1,9 @@
-@startuml MarketHub Backend Class Diagram
+@startuml MarketHubBackendClassDiagram
 
 !theme toy
 
 ' ------------------------------------------------------------------
-' 1. Entity Classes (מודלי ישויות)
+' Core Entities
 ' ------------------------------------------------------------------
 
 class User {
@@ -45,7 +45,7 @@ class Product {
 
 
 ' ------------------------------------------------------------------
-' 2. Transaction Classes (מודלי עסקאות)
+' Transaction Entities
 ' ------------------------------------------------------------------
 
 class Cart {
@@ -77,32 +77,32 @@ class OrderDetail {
 }
 
 ' ------------------------------------------------------------------
-' 3. Relationships (קשרים)
+' Relationships
 ' ------------------------------------------------------------------
 
-' אספקה: ספק אחד למוצרים רבים
+' User (Supplier) to Product
 User "1" --> "*" Product : supplies
 
-' קטלוג: קטגוריה אחת לתת-קטגוריות רבות
+' Category to SubCategory
 Category "1" --> "*" SubCategory : contains
 
-' סיווג: קטגוריה אחת למוצרים רבים
+' Category to Product
 Category "1" --> "*" Product : classifies
 
-' סיווג משני: תת-קטגוריה אחת למוצרים רבים (אופציונלי - Nullable)
+' SubCategory to Product
 SubCategory "0..1" --> "*" Product : refines
 
-' עגלת קניות: רבים לרבים דרך טבלת קישור Cart
+' User and Product via Cart (M-to-M)
 User "1" -- "*" Cart : has
 Product "1" -- "*" Cart : is_in_cart
 
-' היסטוריית רכישות: משתמש אחד להזמנות רבות
+' User to Order
 User "1" -- "*" Order : places
 
-' פרטי הזמנה: הזמנה אחת לשורות רבות
+' Order to OrderDetail
 Order "1" -- "*" OrderDetail : consists_of
 
-' פריט בהזמנה: מוצר אחד יכול להיות בפרטי הזמנה רבים
+' Product to OrderDetail
 Product "1" -- "*" OrderDetail : details_product
 
 @enduml
