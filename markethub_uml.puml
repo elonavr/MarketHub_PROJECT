@@ -1,0 +1,108 @@
+@startuml MarketHub Backend Class Diagram
+
+!theme toy
+
+' ------------------------------------------------------------------
+' 1. Entity Classes (מודלי ישויות)
+' ------------------------------------------------------------------
+
+class User {
+  + user_id: int <<PK>>
+  --
+  + username: str <<Unique>>
+  + password_hash: str
+  + role: str {customer, supplier}
+  --
+  + set_password(password)
+  + check_password(password)
+}
+
+class Category {
+  + category_id: int <<PK>>
+  --
+  + category_name: str <<Unique>>
+}
+
+class SubCategory {
+  + subcategory_id: int <<PK>>
+  + category_id: int <<FK>>
+  --
+  + subcategory_name: str
+}
+
+class Product {
+  + product_id: int <<PK>>
+  + supplier_id: int <<FK>>
+  + category_id: int <<FK>>
+  + subcategory_id: int <<FK>>
+  --
+  + product_name: str
+  + description: text
+  + price: Decimal
+  + stock: int
+  + is_available: bool
+}
+
+
+' ------------------------------------------------------------------
+' 2. Transaction Classes (מודלי עסקאות)
+' ------------------------------------------------------------------
+
+class Cart {
+  + cart_id: int <<PK>>
+  + user_id: int <<FK>>
+  + product_id: int <<FK>>
+  --
+  + quantity: int
+  + added_at: datetime
+}
+
+class Order {
+  + order_id: int <<PK>>
+  + user_id: int <<FK>>
+  --
+  + order_date: datetime
+  + total_amount: Decimal
+  + status: str {pending, paid}
+}
+
+class OrderDetail {
+  + detail_id: int <<PK>>
+  + order_id: int <<FK>>
+  + product_id: int <<FK>>
+  --
+  + quantity: int
+  + price: Decimal <<Snapshot Price>>
+  + total_price: Decimal
+}
+
+' ------------------------------------------------------------------
+' 3. Relationships (קשרים)
+' ------------------------------------------------------------------
+
+' אספקה: ספק אחד למוצרים רבים
+User "1" --> "*" Product : supplies
+
+' קטלוג: קטגוריה אחת לתת-קטגוריות רבות
+Category "1" --> "*" SubCategory : contains
+
+' סיווג: קטגוריה אחת למוצרים רבים
+Category "1" --> "*" Product : classifies
+
+' סיווג משני: תת-קטגוריה אחת למוצרים רבים (אופציונלי - Nullable)
+SubCategory "0..1" --> "*" Product : refines
+
+' עגלת קניות: רבים לרבים דרך טבלת קישור Cart
+User "1" -- "*" Cart : has
+Product "1" -- "*" Cart : is_in_cart
+
+' היסטוריית רכישות: משתמש אחד להזמנות רבות
+User "1" -- "*" Order : places
+
+' פרטי הזמנה: הזמנה אחת לשורות רבות
+Order "1" -- "*" OrderDetail : consists_of
+
+' פריט בהזמנה: מוצר אחד יכול להיות בפרטי הזמנה רבים
+Product "1" -- "*" OrderDetail : details_product
+
+@enduml
